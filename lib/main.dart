@@ -1,4 +1,5 @@
 import 'package:adopt_pets/firebase_options.dart';
+import 'package:adopt_pets/module/home/home_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
@@ -21,9 +22,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
       ),
-      home: const Scaffold(
-        body: SizedBox(),
-      ),
+      home: const HomeScreen(),
     );
   }
 }
