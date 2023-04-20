@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:adopt_pets/models/pet.dart';
 import 'package:adopt_pets/repository/pets_repository.dart';
 import 'package:adopt_pets/utils/api_result.dart';
@@ -22,7 +21,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
   Future<FutureOr<void>> _onFetchPets(
       _FetchPets event, Emitter<HomeState> emit) async {
-    emit(const HomeState.loadInProgress());
+    emit(const HomeState.loadMorePets());
     final ApiResult<List<Pet>> apiResult = await _petsRepository.fetchPets();
     apiResult.when(
       success: (List<Pet> pets) {

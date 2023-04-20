@@ -1,7 +1,10 @@
 import 'package:adopt_pets/firebase_options.dart';
+import 'package:adopt_pets/module/home/bloc/home_bloc.dart';
 import 'package:adopt_pets/module/home/home_screen.dart';
+import 'package:adopt_pets/repository/pets_repository.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,7 +25,12 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
       ),
-      home: const HomeScreen(),
+      home: BlocProvider<HomeBloc>(
+        create: (BuildContext context) => HomeBloc(
+          petsRepository: PetsRepository(),
+        )..add(const HomeEvent.fetchPets()),
+        child: const HomeScreen(),
+      ),
     );
   }
 }

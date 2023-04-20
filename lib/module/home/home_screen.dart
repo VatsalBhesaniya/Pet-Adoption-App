@@ -1,6 +1,5 @@
 import 'package:adopt_pets/models/pet.dart';
 import 'package:adopt_pets/module/home/bloc/home_bloc.dart';
-import 'package:adopt_pets/repository/pets_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -12,58 +11,82 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController
+      ..removeListener(_onScroll)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) {
+      return;
+    }
+    final double maxScroll = _scrollController.position.maxScrollExtent;
+    final double currentScroll = _scrollController.position.pixels;
+    if (currentScroll == maxScroll) {
+      context.read<HomeBloc>().add(
+            const HomeEvent.fetchPets(),
+          );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Home'),
         centerTitle: true,
-        backgroundColor: Colors.amber,
       ),
-      body: BlocProvider<HomeBloc>(
-        create: (BuildContext context) => HomeBloc(
-          petsRepository: PetsRepository(),
-        )..add(const HomeEvent.fetchPets()),
-        child: SafeArea(
-          child: BlocConsumer<HomeBloc, HomeState>(
-            listener: (BuildContext context, HomeState state) {
-              state.maybeWhen(
-                orElse: () => null,
-              );
-            },
-            builder: (BuildContext context, HomeState state) {
-              return state.maybeWhen(
-                initial: () {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
-                },
-                loadInProgress: () {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
-                },
-                fetchPetsSuccess: (List<Pet> pets) {
-                  return Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Column(
-                      children: <Widget>[
-                        _searchBox(),
-                        const SizedBox(height: 8),
-                        _petGridView(pets),
-                      ],
-                    ),
-                  );
-                },
-                fetchPetsFailure: (Exception exception) {
-                  return const Center(
-                    child: Text('Something went wrong. Please try again.'),
-                  );
-                },
-                orElse: () => const SizedBox(),
-              );
-            },
-          ),
+      body: SafeArea(
+        child: BlocConsumer<HomeBloc, HomeState>(
+          listener: (BuildContext context, HomeState state) {
+            state.maybeWhen(
+              orElse: () => null,
+            );
+          },
+          buildWhen: (HomeState previous, HomeState current) {
+            return current.maybeWhen(
+              loadMorePets: () => false,
+              orElse: () => true,
+            );
+          },
+          builder: (BuildContext context, HomeState state) {
+            return state.maybeWhen(
+              initial: () {
+                return const Center(
+                  child: CircularProgressIndicator(),
+                );
+              },
+              fetchPetsSuccess: (List<Pet> pets) {
+                return Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Column(
+                    children: <Widget>[
+                      _searchBox(),
+                      const SizedBox(height: 8),
+                      _petGridView(pets),
+                    ],
+                  ),
+                );
+              },
+              fetchPetsFailure: (Exception exception) {
+                return const Center(
+                  child: Text('Failed to fetch pets'),
+                );
+              },
+              orElse: () => const SizedBox(),
+            );
+          },
         ),
       ),
     );
@@ -101,6 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Expanded _petGridView(List<Pet> pets) {
     return Expanded(
       child: GridView.builder(
+        controller: _scrollController,
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
           childAspectRatio: 0.6,
