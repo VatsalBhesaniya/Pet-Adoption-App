@@ -40,15 +40,18 @@ Future<void> main() async {
           Provider<AppStorageManager>.value(
             value: appStorageManager,
           ),
+          RepositoryProvider<PetsRepository>(
+            create: (BuildContext context) => PetsRepository(),
+          ),
         ],
-        child: const MyApp(),
+        child: const PetApp(),
       ),
     );
   }, (Object error, StackTrace stack) {});
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class PetApp extends StatelessWidget {
+  const PetApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -70,7 +73,7 @@ class MyApp extends StatelessWidget {
             darkTheme: context.read<AppTheme>().darkTheme,
             home: BlocProvider<HomeBloc>(
               create: (BuildContext context) => HomeBloc(
-                petsRepository: PetsRepository(),
+                petsRepository: RepositoryProvider.of<PetsRepository>(context),
               )..add(const HomeEvent.fetchPets()),
               child: const HomeScreen(),
             ),

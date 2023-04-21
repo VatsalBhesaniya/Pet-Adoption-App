@@ -1,7 +1,7 @@
-import 'package:adopt_pets/manager/app_storage_manager.dart';
 import 'package:adopt_pets/models/pet.dart';
 import 'package:adopt_pets/module/details/bloc/pet_details_bloc.dart';
 import 'package:adopt_pets/module/details/image_viewer_screen.dart';
+import 'package:adopt_pets/widgets/pma_alert_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -21,13 +21,16 @@ class _PetDetailsScreenState extends State<PetDetailsScreen> {
           listener: (BuildContext context, PetDetailsState state) {
             state.maybeWhen(
               adoptPetSuccess: (Pet pet) {
-                context.read<AppStorageManager>().setAdoptedPet(
-                      pet.id.toString(),
-                      pet.name,
-                    );
                 _adoptPetDialog(context, pet.name);
               },
-              orElse: () => true,
+              adoptPetFailure: (Exception exception) {
+                petAppAlertDialog(
+                  context: context,
+                  theme: Theme.of(context),
+                  error: 'Something went wrong',
+                );
+              },
+              orElse: () => null,
             );
           },
           buildWhen: (PetDetailsState previous, PetDetailsState current) {
@@ -37,19 +40,17 @@ class _PetDetailsScreenState extends State<PetDetailsScreen> {
           },
           builder: (BuildContext context, PetDetailsState state) {
             return state.maybeWhen(
-              initial: (Pet pet, bool isAdopted) {
-                return CustomScrollView(
-                  slivers: <Widget>[
-                    _sliverBox(context, pet),
-                    if (!isAdopted) _sliverFill(context, pet)
-                  ],
+              initial: (Pet pet) {
+                return _buildScreen(context, pet);
+              },
+              adoptPetSuccess: (Pet pet) {
+                return _buildScreen(context, pet);
+              },
+              orElse: () {
+                return const Center(
+                  child: CircularProgressIndicator(),
                 );
               },
-              orElse: () => const Expanded(
-                child: Center(
-                  child: CircularProgressIndicator(),
-                ),
-              ),
             );
           },
         ),
@@ -57,7 +58,19 @@ class _PetDetailsScreenState extends State<PetDetailsScreen> {
     );
   }
 
-  Future<dynamic> _adoptPetDialog(BuildContext context, String petName) {
+  CustomScrollView _buildScreen(BuildContext context, Pet pet) {
+    return CustomScrollView(
+      slivers: <Widget>[
+        _sliverBox(context, pet),
+        if (!pet.isAdopted) _sliverFill(context, pet)
+      ],
+    );
+  }
+
+  Future<dynamic> _adoptPetDialog(
+    BuildContext context,
+    String petName,
+  ) {
     return showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -103,14 +116,23 @@ class _PetDetailsScreenState extends State<PetDetailsScreen> {
           child: FilledButton(
             child: const Text('Adopt Me'),
             onPressed: () {
-              context.read<PetDetailsBloc>().add(
-                    PetDetailsEvent.adoptPet(pet: pet),
-                  );
+              _adoptPet(context, pet);
             },
           ),
         ),
       ),
     );
+  }
+
+  void _adoptPet(BuildContext context, Pet pet) {
+    context.read<PetDetailsBloc>().add(
+          PetDetailsEvent.adoptPet(
+            pet: pet.copyWith(
+              isAdopted: true,
+              adoptedAt: DateTime.now().toUtc().millisecondsSinceEpoch,
+            ),
+          ),
+        );
   }
 
   Stack _petImage(BuildContext context, Pet pet) {
