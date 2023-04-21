@@ -2,7 +2,10 @@ import 'package:adopt_pets/manager/app_storage_manager.dart';
 import 'package:adopt_pets/models/pet.dart';
 import 'package:adopt_pets/module/details/bloc/pet_details_bloc.dart';
 import 'package:adopt_pets/module/details/pet_details_screen.dart';
+import 'package:adopt_pets/module/history/adoption_history_screen.dart';
+import 'package:adopt_pets/module/history/bloc/adoption_history_bloc.dart';
 import 'package:adopt_pets/module/home/bloc/home_bloc.dart';
+import 'package:adopt_pets/repository/pets_repository.dart';
 import 'package:adopt_pets/theme/theme_changer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -53,6 +56,7 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('Choose Pets'),
         centerTitle: true,
         actions: <Widget>[
+          _historyButton(context),
           _settingsButton(theme),
         ],
       ),
@@ -104,17 +108,38 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Padding _settingsButton(ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: IconButton(
-        onPressed: () {
-          _changeThemeDialog();
-        },
-        icon: Icon(
-          Icons.settings,
-          color: Colors.grey.shade800,
-        ),
+  IconButton _historyButton(BuildContext context) {
+    return IconButton(
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute<void>(
+            builder: (BuildContext context) {
+              return BlocProvider<AdoptionHistoryBloc>(
+                create: (BuildContext context) => AdoptionHistoryBloc(
+                  petsRepository:
+                      RepositoryProvider.of<PetsRepository>(context),
+                ),
+                child: const AdoptionHistoryScreen(),
+              );
+            },
+          ),
+        );
+      },
+      icon: const Icon(
+        Icons.history_rounded,
+      ),
+    );
+  }
+
+  IconButton _settingsButton(ThemeData theme) {
+    return IconButton(
+      onPressed: () {
+        _changeThemeDialog();
+      },
+      icon: Icon(
+        Icons.settings,
+        color: Colors.grey.shade800,
       ),
     );
   }
@@ -271,31 +296,22 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _petCard(BuildContext context, Pet pet) {
-    return FutureBuilder<String?>(
-      future: context.read<AppStorageManager>().getAdoptedPet(
-            pet.id.toString(),
-          ),
-      builder: (BuildContext context, AsyncSnapshot<String?> snapshot) {
-        final String? petId = snapshot.data;
-        return GestureDetector(
-          onTap: () {
-            _navigateToDetailsScreen(context, pet, petId != null);
-          },
-          child: Container(
-            margin: const EdgeInsets.all(8),
-            decoration: _decoration(petId != null),
-            child: _petData(pet, petId != null),
-          ),
-        );
+  GestureDetector _petCard(BuildContext context, Pet pet) {
+    return GestureDetector(
+      onTap: () {
+        _navigateToDetailsScreen(context, pet);
       },
+      child: Container(
+        margin: const EdgeInsets.all(8),
+        decoration: _decoration(pet.isAdopted),
+        child: _petData(pet, pet.isAdopted),
+      ),
     );
   }
 
   Future<void> _navigateToDetailsScreen(
     BuildContext context,
     Pet pet,
-    bool isAdopted,
   ) {
     return Navigator.push(
       context,
@@ -304,7 +320,7 @@ class _HomeScreenState extends State<HomeScreen> {
           return BlocProvider<PetDetailsBloc>(
             create: (BuildContext context) => PetDetailsBloc(
               pet: pet,
-              isAdopted: isAdopted,
+              petsRepository: RepositoryProvider.of<PetsRepository>(context),
             ),
             child: const PetDetailsScreen(),
           );

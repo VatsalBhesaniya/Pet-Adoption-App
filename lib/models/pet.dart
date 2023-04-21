@@ -5,6 +5,7 @@ part 'pet.g.dart';
 
 @freezed
 class Pet with _$Pet {
+  @JsonSerializable(explicitToJson: true)
   factory Pet({
     @JsonKey() required int id,
     @JsonKey() required String name,
@@ -19,6 +20,8 @@ class Pet with _$Pet {
     @JsonKey() required String breed,
     @JsonKey() required String color,
     @JsonKey() required String category,
+    @JsonKey() @Default(false) bool isAdopted,
+    @JsonKey() int? adoptedAt,
   }) = _Pet;
 
   factory Pet.fromJson(Map<String, dynamic> json) => _$PetFromJson(json);
