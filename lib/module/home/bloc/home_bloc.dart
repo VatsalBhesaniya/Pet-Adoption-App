@@ -15,18 +15,20 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   })  : _petsRepository = petsRepository,
         super(const HomeState.initial()) {
     on<_FetchPets>(_onFetchPets);
+    on<_SearchPets>(_onSearchPets);
   }
 
   final PetsRepository _petsRepository;
 
-  Future<FutureOr<void>> _onFetchPets(
-      _FetchPets event, Emitter<HomeState> emit) async {
+  Future<void> _onFetchPets(_FetchPets event, Emitter<HomeState> emit) async {
     emit(const HomeState.loadMorePets());
     final ApiResult<List<Pet>> apiResult = await _petsRepository.fetchPets();
     apiResult.when(
       success: (List<Pet> pets) {
         emit(
-          HomeState.fetchPetsSuccess(pets: pets),
+          HomeState.fetchPetsSuccess(
+            pets: pets,
+          ),
         );
       },
       failure: (Exception exception) {
@@ -36,6 +38,30 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           ),
         );
       },
+    );
+  }
+
+  void _onSearchPets(_SearchPets event, Emitter<HomeState> emit) {
+    if (event.searchText.trim().isEmpty) {
+      emit(
+        HomeState.fetchPetsSuccess(
+          pets: event.pets,
+        ),
+      );
+      return;
+    }
+    final List<Pet> searchPets = event.pets.where(
+      (Pet pet) {
+        return pet.name.toLowerCase().contains(
+              event.searchText.toLowerCase(),
+            );
+      },
+    ).toList();
+    emit(
+      HomeState.fetchPetsSuccess(
+        pets: event.pets,
+        searchets: searchPets,
+      ),
     );
   }
 }

@@ -11,6 +11,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -43,10 +44,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Home'),
-        centerTitle: true,
-      ),
       body: SafeArea(
         child: BlocConsumer<HomeBloc, HomeState>(
           listener: (BuildContext context, HomeState state) {
@@ -67,14 +64,20 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: CircularProgressIndicator(),
                 );
               },
-              fetchPetsSuccess: (List<Pet> pets) {
+              fetchPetsSuccess: (
+                List<Pet> pets,
+                List<Pet>? searchPets,
+              ) {
                 return Padding(
                   padding: const EdgeInsets.all(8),
                   child: Column(
                     children: <Widget>[
-                      _searchBox(),
+                      _searchBox(
+                        context: context,
+                        pets: pets,
+                      ),
                       const SizedBox(height: 8),
-                      _petGridView(pets),
+                      _petGridView(searchPets ?? pets),
                     ],
                   ),
                 );
@@ -92,55 +95,88 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  TextField _searchBox() {
-    return TextField(
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: Colors.grey.shade200,
-        enabledBorder: const OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.white),
-          borderRadius: BorderRadius.all(
-            Radius.circular(8),
+  Padding _searchBox({
+    required BuildContext context,
+    required List<Pet> pets,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.all(8),
+      child: TextField(
+        onChanged: (String value) {
+          _searchPets(context, pets);
+        },
+        controller: _searchController,
+        decoration: InputDecoration(
+          filled: true,
+          fillColor: Colors.grey.shade200,
+          enabledBorder: const OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.white),
+            borderRadius: BorderRadius.all(
+              Radius.circular(8),
+            ),
           ),
-        ),
-        focusedBorder: const OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.white),
-          borderRadius: BorderRadius.all(
-            Radius.circular(8),
+          focusedBorder: const OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.white),
+            borderRadius: BorderRadius.all(
+              Radius.circular(8),
+            ),
           ),
+          isDense: true,
+          contentPadding: EdgeInsets.zero,
+          prefixIcon: const Icon(
+            Icons.search_rounded,
+            size: 24,
+            color: Colors.blueGrey,
+          ),
+          suffixIcon: IconButton(
+            onPressed: () {
+              _searchController.clear();
+              _searchPets(context, pets);
+            },
+            icon: const Icon(
+              Icons.close_rounded,
+            ),
+          ),
+          hintText: 'Pet name',
+          hintStyle: const TextStyle(color: Colors.grey),
         ),
-        isDense: true,
-        prefixIcon: const Icon(
-          Icons.search_rounded,
-          size: 40,
-          color: Colors.blueGrey,
-        ),
-        hintText: 'Pet name',
-        hintStyle: const TextStyle(color: Colors.grey),
       ),
     );
   }
 
+  void _searchPets(BuildContext context, List<Pet> pets) {
+    context.read<HomeBloc>().add(
+          HomeEvent.searchPets(
+            pets: pets,
+            searchText: _searchController.text.trim(),
+          ),
+        );
+  }
+
   Expanded _petGridView(List<Pet> pets) {
     return Expanded(
-      child: GridView.builder(
-        controller: _scrollController,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 0.6,
-          crossAxisSpacing: 4,
-          mainAxisSpacing: 4,
-        ),
-        itemCount: pets.length,
-        itemBuilder: (BuildContext context, int index) {
-          final Pet pet = pets[index];
-          return Container(
-            margin: const EdgeInsets.all(8),
-            decoration: _decoration(),
-            child: _petData(pet),
-          );
-        },
-      ),
+      child: pets.isEmpty
+          ? const Center(
+              child: Text('No pets to show.'),
+            )
+          : GridView.builder(
+              controller: _scrollController,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.6,
+                crossAxisSpacing: 4,
+                mainAxisSpacing: 4,
+              ),
+              itemCount: pets.length,
+              itemBuilder: (BuildContext context, int index) {
+                final Pet pet = pets[index];
+                return Container(
+                  margin: const EdgeInsets.all(8),
+                  decoration: _decoration(),
+                  child: _petData(pet),
+                );
+              },
+            ),
     );
   }
 
