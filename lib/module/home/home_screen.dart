@@ -1,5 +1,9 @@
+import 'package:adopt_pets/manager/app_storage_manager.dart';
 import 'package:adopt_pets/models/pet.dart';
+import 'package:adopt_pets/module/details/bloc/pet_details_bloc.dart';
+import 'package:adopt_pets/module/details/pet_details_screen.dart';
 import 'package:adopt_pets/module/home/bloc/home_bloc.dart';
+import 'package:adopt_pets/theme/theme_changer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -43,18 +47,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Home'),
+        title: const Text('Choose Pets'),
         centerTitle: true,
+        actions: <Widget>[
+          _settingsButton(theme),
+        ],
       ),
       body: SafeArea(
-        child: BlocConsumer<HomeBloc, HomeState>(
-          listener: (BuildContext context, HomeState state) {
-            state.maybeWhen(
-              orElse: () => null,
-            );
-          },
+        child: BlocBuilder<HomeBloc, HomeState>(
           buildWhen: (HomeState previous, HomeState current) {
             return current.maybeWhen(
               loadMorePets: () => false,
@@ -97,6 +100,92 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           },
         ),
+      ),
+    );
+  }
+
+  Padding _settingsButton(ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: IconButton(
+        onPressed: () {
+          _changeThemeDialog();
+        },
+        icon: Icon(
+          Icons.settings,
+          color: Colors.grey.shade800,
+        ),
+      ),
+    );
+  }
+
+  Future<dynamic> _changeThemeDialog() {
+    return showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                const Text(
+                  'Select Theme',
+                  style: TextStyle(
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                _themeOptions(context),
+                const SizedBox(height: 16),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Row _themeOptions(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: <Widget>[
+        _themeOption(
+          onPressed: () {
+            context.read<ThemeChanger>().setTheme(AppThemeMode.light);
+          },
+          iconData: Icons.light_mode_rounded,
+        ),
+        _themeOption(
+          onPressed: () {
+            context.read<ThemeChanger>().setTheme(AppThemeMode.dark);
+          },
+          iconData: Icons.nightlight_round,
+        ),
+        _themeOption(
+          onPressed: () {
+            context.read<ThemeChanger>().setTheme(AppThemeMode.system);
+          },
+          iconData: Icons.settings_suggest_rounded,
+        ),
+      ],
+    );
+  }
+
+  CircleAvatar _themeOption({
+    required void Function()? onPressed,
+    required IconData iconData,
+  }) {
+    return CircleAvatar(
+      child: IconButton(
+        onPressed: onPressed,
+        icon: Icon(iconData),
       ),
     );
   }
@@ -169,24 +258,62 @@ class _HomeScreenState extends State<HomeScreen> {
               controller: _scrollController,
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                childAspectRatio: 0.6,
+                childAspectRatio: 0.7,
                 crossAxisSpacing: 4,
                 mainAxisSpacing: 4,
               ),
               itemCount: pets.length,
               itemBuilder: (BuildContext context, int index) {
                 final Pet pet = pets[index];
-                return Container(
-                  margin: const EdgeInsets.all(8),
-                  decoration: _decoration(),
-                  child: _petData(pet),
-                );
+                return _petCard(context, pet);
               },
             ),
     );
   }
 
-  BoxDecoration _decoration() {
+  Widget _petCard(BuildContext context, Pet pet) {
+    return FutureBuilder<String?>(
+      future: context.read<AppStorageManager>().getAdoptedPet(
+            pet.id.toString(),
+          ),
+      builder: (BuildContext context, AsyncSnapshot<String?> snapshot) {
+        final String? petId = snapshot.data;
+        return GestureDetector(
+          onTap: () {
+            _navigateToDetailsScreen(context, pet, petId != null);
+          },
+          child: Container(
+            margin: const EdgeInsets.all(8),
+            decoration: _decoration(petId != null),
+            child: _petData(pet, petId != null),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _navigateToDetailsScreen(
+    BuildContext context,
+    Pet pet,
+    bool isAdopted,
+  ) {
+    return Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (BuildContext context) {
+          return BlocProvider<PetDetailsBloc>(
+            create: (BuildContext context) => PetDetailsBloc(
+              pet: pet,
+              isAdopted: isAdopted,
+            ),
+            child: const PetDetailsScreen(),
+          );
+        },
+      ),
+    );
+  }
+
+  BoxDecoration _decoration(bool isAdopted) {
     return BoxDecoration(
       borderRadius: const BorderRadius.all(
         Radius.circular(16),
@@ -198,27 +325,55 @@ class _HomeScreenState extends State<HomeScreen> {
           color: Colors.grey.shade400,
         ),
       ],
-      color: Colors.white,
+      color: isAdopted ? Colors.blueGrey.shade200 : Colors.white,
     );
   }
 
-  Column _petData(Pet pet) {
+  Column _petData(Pet pet, bool isAdopted) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         _petImage(pet),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         _petName(pet),
-        const SizedBox(height: 4),
-        _petInfoItem(
-          title: 'Age: ',
-          value: '${pet.age} Years',
-          backgroundColor: Colors.blue.shade100,
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: <Widget>[
+            _petInfoItem(
+              value: '${pet.age} Years',
+              color: Colors.grey.shade600,
+            ),
+            const SizedBox(width: 8),
+            _petInfoItem(
+              value: '\$${pet.price}',
+              color: Colors.blueGrey.shade900,
+            ),
+          ],
         ),
-        _petInfoItem(
-          title: 'Price: ',
-          value: '\$${pet.price}',
-          backgroundColor: Colors.blueAccent,
+        const SizedBox(height: 8),
+        if (isAdopted) _alreadyAdopted(),
+      ],
+    );
+  }
+
+  Column _alreadyAdopted() {
+    return Column(
+      children: <Widget>[
+        Center(
+          child: Chip(
+            backgroundColor: Colors.grey.shade700,
+            side: BorderSide.none,
+            padding: EdgeInsets.zero,
+            visualDensity: VisualDensity.compact,
+            label: const Text(
+              'Already Adopted',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.white,
+              ),
+            ),
+          ),
         ),
         const SizedBox(height: 8),
       ],
@@ -231,9 +386,12 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: const BorderRadius.all(
           Radius.circular(16),
         ),
-        child: Image.network(
-          pet.imageUrl,
-          fit: BoxFit.cover,
+        child: Hero(
+          tag: pet.id,
+          child: Image.network(
+            pet.imageUrl,
+            fit: BoxFit.cover,
+          ),
         ),
       ),
     );
@@ -244,8 +402,8 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Text(
         pet.name,
-        style: const TextStyle(
-          fontSize: 18,
+        style: TextStyle(
+          color: Colors.grey.shade800,
           fontWeight: FontWeight.bold,
         ),
       ),
@@ -253,37 +411,16 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Padding _petInfoItem({
-    required String title,
     required String value,
-    required Color backgroundColor,
+    required Color color,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: <Widget>[
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 16,
-              color: Colors.blueGrey,
-            ),
-          ),
-          Chip(
-            elevation: 4,
-            shape: const StadiumBorder(),
-            side: BorderSide.none,
-            backgroundColor: Colors.blueAccent,
-            padding: EdgeInsets.zero,
-            visualDensity: VisualDensity.compact,
-            label: Text(
-              value,
-              style: const TextStyle(
-                color: Colors.white,
-              ),
-            ),
-          ),
-        ],
+      child: Text(
+        value,
+        style: TextStyle(
+          color: color,
+        ),
       ),
     );
   }
