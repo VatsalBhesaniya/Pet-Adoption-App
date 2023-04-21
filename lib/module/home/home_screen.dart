@@ -44,6 +44,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Home'),
+        centerTitle: true,
+      ),
       body: SafeArea(
         child: BlocConsumer<HomeBloc, HomeState>(
           listener: (BuildContext context, HomeState state) {
@@ -69,7 +73,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 List<Pet>? searchPets,
               ) {
                 return Padding(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                  ),
                   child: Column(
                     children: <Widget>[
                       _searchBox(
@@ -100,7 +106,7 @@ class _HomeScreenState extends State<HomeScreen> {
     required List<Pet> pets,
   }) {
     return Padding(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
       child: TextField(
         onChanged: (String value) {
           _searchPets(context, pets);
