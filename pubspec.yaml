@@ -29,6 +29,7 @@ environment:
 # versions available, run `flutter pub outdated`.
 dependencies:
   cloud_firestore: ^4.5.2
+  confetti: ^0.7.0
   fake_cloud_firestore: ^2.4.1+1
   flutter:
     sdk: flutter

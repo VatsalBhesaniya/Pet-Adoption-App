@@ -309,11 +309,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<void> _navigateToDetailsScreen(
+  void _navigateToDetailsScreen(
     BuildContext context,
     Pet pet,
   ) {
-    return Navigator.push(
+    Navigator.push(
       context,
       MaterialPageRoute<void>(
         builder: (BuildContext context) {
