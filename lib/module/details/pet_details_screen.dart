@@ -1,4 +1,5 @@
 import 'package:adopt_pets/models/pet.dart';
+import 'package:adopt_pets/module/details/adopt_pet_dialog.dart';
 import 'package:adopt_pets/module/details/bloc/pet_details_bloc.dart';
 import 'package:adopt_pets/module/details/image_viewer_screen.dart';
 import 'package:adopt_pets/widgets/pma_alert_dialog.dart';
@@ -74,23 +75,7 @@ class _PetDetailsScreenState extends State<PetDetailsScreen> {
     return showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text(
-            'Thank You',
-            textAlign: TextAlign.center,
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Text(
-                'You’ve now adopted $petName',
-                style: const TextStyle(
-                  fontSize: 16,
-                ),
-              ),
-            ],
-          ),
-        );
+        return AdoptPetDialog(petName: petName);
       },
     );
   }
