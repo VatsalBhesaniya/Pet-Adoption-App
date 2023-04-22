@@ -8,6 +8,7 @@ import 'package:adopt_pets/repository/pets_repository.dart';
 import 'package:adopt_pets/theme/app_theme.dart';
 import 'package:adopt_pets/theme/pet_adoption_theme.dart';
 import 'package:adopt_pets/theme/theme_changer.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -41,7 +42,9 @@ Future<void> main() async {
             value: appStorageManager,
           ),
           RepositoryProvider<PetsRepository>(
-            create: (BuildContext context) => PetsRepository(),
+            create: (BuildContext context) => PetsRepository(
+              firebaseFirestore: FirebaseFirestore.instance,
+            ),
           ),
         ],
         child: const PetApp(),

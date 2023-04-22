@@ -3,6 +3,11 @@ import 'package:adopt_pets/utils/api_result.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PetsRepository {
+  PetsRepository({
+    required this.firebaseFirestore,
+  });
+  FirebaseFirestore firebaseFirestore;
+
   DocumentSnapshot<Object?>? lastDocument;
   bool hasMore = true;
   List<Pet> pets = <Pet>[];
@@ -15,7 +20,7 @@ class PetsRepository {
       QuerySnapshot<Map<String, dynamic>> petsSnapshot;
       if (lastDocument == null) {
         petsSnapshot =
-            await FirebaseFirestore.instance.collection('pets').limit(8).get();
+            await firebaseFirestore.collection('pets').limit(8).get();
       } else {
         petsSnapshot = await FirebaseFirestore.instance
             .collection('pets')
@@ -23,7 +28,9 @@ class PetsRepository {
             .limit(8)
             .get();
       }
-      lastDocument = petsSnapshot.docs.last;
+      if (petsSnapshot.docs.isNotEmpty) {
+        lastDocument = petsSnapshot.docs.last;
+      }
       hasMore = !(petsSnapshot.docs.length < 8);
       List<Pet> petsList = <Pet>[];
       petsList = petsSnapshot.docs.map(

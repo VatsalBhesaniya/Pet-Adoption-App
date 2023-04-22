@@ -24,14 +24,6 @@ class AppStorageManager {
   String getThemeMode() {
     return sharedPreferences.getString(themeMode) ?? AppThemeMode.system.title;
   }
-
-  void setAdoptedPet(String key, String value) {
-    sharedPreferences.setString(key, value);
-  }
-
-  Future<String?> getAdoptedPet(String key) async {
-    return sharedPreferences.getString(key);
-  }
 }
 
 enum AppThemeMode { system, light, dark }
