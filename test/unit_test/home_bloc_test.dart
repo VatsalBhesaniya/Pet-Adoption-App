@@ -25,7 +25,6 @@ void main() {
       color: 'color',
       category: 'category',
     );
-    final List<dynamic> petData = <dynamic>[pet.toJson()];
 
     setUp(() async {
       firestore = FakeFirebaseFirestore();
@@ -33,15 +32,14 @@ void main() {
           petsRepository: PetsRepository(
         firebaseFirestore: firestore,
       ));
-      final CollectionReference<Map<String, dynamic>> doc =
-          firestore.collection('pets');
-      await doc.add(pet.toJson());
     });
 
     blocTest<HomeBloc, HomeState>(
       'Success',
       setUp: () async {
-        await firestore.collection('pets').limit(8).get();
+        final CollectionReference<Map<String, dynamic>> doc =
+            firestore.collection('pets');
+        await doc.add(pet.toJson());
       },
       build: () => homeBloc,
       act: (HomeBloc bloc) => bloc.add(
